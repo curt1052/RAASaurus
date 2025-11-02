@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RAASaurus</title>
+  <script src="https://unpkg.com/vue@2"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root { --p: #1a3d7c; --a: #0d6efd; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f8f9fa; margin: 0; }
+    .brand { font-family: 'Orbitron', sans-serif; font-size: 2rem; }
+    .pulse { animation: p 2s infinite; }
+    @keyframes p { 50% { opacity: .7; } }
+    .card:hover { transform: translateY(-3px); transition: .2s; }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-dark" style="background:var(--p)">
+    <div class="container-fluid">
+      <a class="navbar-brand brand" href="#">RAASaurus</a>
+      <span class="badge bg-light text-dark pulse">LIVE + AI</span>
+    </div>
+  </nav>
+
+  <div id="app" class="container py-4">
+    <h1 class="text-center display-5" style="color:var(--p);font-family:'Orbitron',sans-serif">RAASaurus</h1>
+    <p class="text-center text-muted">Robot Fleet Intelligence</p>
+    <small class="d-block text-center text-success mb-4">{{ now }}</small>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-2" v-for="m in metrics">
+        <div class="card h-100 border-start border-4" :style="{borderColor:m.c}">
+          <div class="card-body text-center p-3">
+            <h4 :style="{color:m.c}">{{ m.v }}</h4>
+            <small class="text-muted">{{ m.l }}</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow">
+      <div class="card-body">
+        <ul class="nav nav-tabs">
+          <li class="nav-item" v-for="t in tabs">
+            <a class="nav-link" :class="{active: tab===t.id}" @click="tab=t.id" href="#">{{ t.n }}</a>
+          </li>
+        </ul>
+        <div class="p-3">
+          <p v-if="tab==='econ'">Economic Analysis: ROI, break-even, viability</p>
+          <p v-if="tab==='fleet'">Live Fleet Map: 38 robots, health status</p>
+          <p v-if="tab==='predictive'">Predictive AI: 94.8% accuracy, 3 critical alerts</p>
+          <p v-if="tab==='service'">Service Network: 3 centers, next slot</p>
+          <p v-if="tab==='roadmap'">Tech Roadmap: 2026–2030 milestones</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    new Vue({
+      el: '#app',
+      data: {
+        now: new Date().toLocaleTimeString(),
+        tab: 'econ',
+        metrics: [
+          { l: 'Active Units', v: 38, c: '#0d6efd' },
+          { l: 'Revenue/hr', v: '$1,284', c: '#198754' },
+          { l: 'Utilization', v: '84%', c: '#0dcaf0' },
+          { l: 'MTBF', v: '1,820h', c: '#ffc107' },
+          { l: 'Critical', v: 3, c: '#fd7e14' },
+          { l: 'Upcoming', v: 7, c: '#6c757d' }
+        ],
+        tabs: [
+          { id: 'econ', n: 'Economic' },
+          { id: 'fleet', n: 'Fleet Map' },
+          { id: 'predictive', n: 'Predictive AI' },
+          { id: 'service', n: 'Service' },
+          { id: 'roadmap', n: 'Roadmap' }
+        ]
+      },
+      mounted() { setInterval(() => this.now = new Date().toLocaleTimeString(), 1000) }
+    })
+  </script>
+</body>
+</html>

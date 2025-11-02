@@ -14,6 +14,10 @@
     .pulse { animation: p 2s infinite; }
     @keyframes p { 50% { opacity: .7; } }
     .card:hover { transform: translateY(-3px); transition: .2s; }
+    .alert-critical { background: #dc3545; color: white; }
+    .alert-warning { background: #ffc107; color: black; }
+    .telemetry-map { height: 200px; background: #e9ecef; border: 1px solid #dee2e6; border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; color: #6c757d; }
+    canvas { max-width: 100%; }
   </style>
 </head>
 <body>
@@ -48,11 +52,101 @@
           </li>
         </ul>
         <div class="p-3">
-          <p v-if="tab==='econ'">Economic Analysis: ROI, break-even, viability</p>
-          <p v-if="tab==='fleet'">Live Fleet Map: 38 robots, health status</p>
-          <p v-if="tab==='predictive'">Predictive AI: 94.8% accuracy, 3 critical alerts</p>
-          <p v-if="tab==='service'">Service Network: 3 centers, next slot</p>
-          <p v-if="tab==='roadmap'">Tech Roadmap: 2026–2030 milestones</p>
+          <!-- Economic Analysis Tab -->
+          <div v-if="tab==='econ'">
+            <h5>Economic Analysis</h5>
+            <div class="row g-3">
+              <div class="col-md-4" v-for="ind in industries">
+                <div class="card h-100">
+                  <div class="card-body">
+                    <h6>{{ ind.name }}</h6>
+                    <p>ROI: ${{ ind.roi }}/hr | Break-even: {{ ind.breakEven }} days</p>
+                    <div class="progress" style="height: 10px;">
+                      <div class="progress-bar bg-success" :style="{width: ind.viability + '%'}"></div>
+                    </div>
+                    <small>Viability: {{ ind.viability }}%</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Fleet Map Tab -->
+          <div v-if="tab==='fleet'">
+            <h5>Live Fleet Map</h5>
+            <div class="telemetry-map mb-3">Interactive Map Simulation (38 Robots Active)</div>
+            <table class="table table-sm">
+              <thead><tr><th>ID</th><th>Status</th><th>Health</th><th>Battery</th><th>Location</th></tr></thead>
+              <tbody>
+                <tr v-for="robot in fleetData" :key="robot.id">
+                  <td>{{ robot.id }}</td>
+                  <td><span class="badge" :class="robot.status === 'online' ? 'bg-success' : 'bg-warning'">{{ robot.status }}</span></td>
+                  <td>{{ robot.health }}%</td>
+                  <td>{{ robot.battery }}%</td>
+                  <td>{{ robot.location }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Predictive AI Tab -->
+          <div v-if="tab==='predictive'">
+            <h5>Predictive AI Alerts</h5>
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <div class="card">
+                  <div class="card-body">
+                    <h6>Accuracy: {{ predictiveAccuracy }}%</h6>
+                    <p>Critical Alerts: {{ predictiveAlerts.critical }}</p>
+                    <p>Upcoming: {{ predictiveAlerts.upcoming }}</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <canvas id="alertChart" width="200" height="200"></canvas>
+              </div>
+            </div>
+            <table class="table table-sm">
+              <thead><tr><th>Robot ID</th><th>Component</th><th>Risk</th><th>ETA</th><th>Confidence</th><th>Action</th></tr></thead>
+              <tbody>
+                <tr v-for="alert in predictiveAlerts.data" :key="alert.id" :class="alert.risk > 80 ? 'table-danger' : alert.risk > 60 ? 'table-warning' : ''">
+                  <td>{{ alert.robotId }}</td>
+                  <td>{{ alert.component }}</td>
+                  <td><span class="badge" :class="alert.risk > 80 ? 'bg-danger' : alert.risk > 60 ? 'bg-warning' : 'bg-secondary'">{{ alert.risk }}%</span></td>
+                  <td>{{ alert.eta }}</td>
+                  <td>{{ alert.confidence }}%</td>
+                  <td><button class="btn btn-sm btn-primary" @click="scheduleAlert(alert)">Schedule</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Service Network Tab -->
+          <div v-if="tab==='service'">
+            <h5>Service Network</h5>
+            <div class="telemetry-map mb-3">Service Map Simulation (3 Centers)</div>
+            <div class="row g-3">
+              <div class="col-md-4" v-for="center in serviceCenters">
+                <div class="card">
+                  <div class="card-body">
+                    <h6>{{ center.name }}</h6>
+                    <p>Load: {{ center.load }}% | Queue: {{ center.queue }}</p>
+                    <button class="btn btn-primary" @click="bookService(center)">Book</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tech Roadmap Tab -->
+          <div v-if="tab==='roadmap'">
+            <h5>Tech Roadmap</h5>
+            <ul class="list-group">
+              <li v-for="milestone in roadmap" :key="milestone.year" class="list-group-item">
+                <strong>{{ milestone.year }}</strong>: {{ milestone.desc }} (MTBF: {{ milestone.mtbf }}h)
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
@@ -73,15 +167,98 @@
           { l: 'Upcoming', v: 7, c: '#6c757d' }
         ],
         tabs: [
-          { id: 'econ', n: 'Economic' },
-          { id: 'fleet', n: 'Fleet Map' },
+          { id: 'econ', n: 'Economic Analysis' },
+          { id: 'fleet', n: 'Live Fleet Map' },
           { id: 'predictive', n: 'Predictive AI' },
-          { id: 'service', n: 'Service' },
-          { id: 'roadmap', n: 'Roadmap' }
-        ]
+          { id: 'service', n: 'Service Network' },
+          { id: 'roadmap', n: 'Tech Roadmap' }
+        ],
+        industries: [
+          { name: 'Warehouse Picking', roi: 14.2, breakEven: 11, viability: 92 },
+          { name: 'Hotel Housekeeping', roi: 11.8, breakEven: 14, viability: 88 },
+          { name: 'Elder Care', roi: 18.5, breakEven: 22, viability: 96 }
+        ],
+        fleetData: [], // Populated by fetchTelemetry
+        predictiveAccuracy: 94.8,
+        predictiveAlerts: { critical: 3, upcoming: 7, data: [] }, // Populated by fetchAlerts
+        serviceCenters: [
+          { name: 'Winnipeg Hub', load: 78, queue: 3 },
+          { name: 'Toronto Center', load: 82, queue: 5 },
+          { name: 'Vancouver Site', load: 65, queue: 1 }
+        ],
+        roadmap: [
+          { year: 2026, desc: 'Predictive v1', mtbf: 1200 },
+          { year: 2027, desc: 'Digital Twin', mtbf: 2800 },
+          { year: 2028, desc: 'Self-Healing', mtbf: 5000 },
+          { year: 2030, desc: 'Zero Downtime', mtbf: 12000 }
+        ],
+        alertChart: null
       },
-      mounted() { setInterval(() => this.now = new Date().toLocaleTimeString(), 1000) }
-    })
+      methods: {
+        async fetchTelemetry() {
+          // Simulated real-time API (inspired by Tesla/ThingsBoard JSON)
+          const response = {
+            activeRobots: Math.floor(Math.random() * 10) + 35, // 35-45
+            utilization: Math.floor(Math.random() * 15) + 75, // 75-90%
+            fleet: Array.from({length: 5}, (_, i) => ({
+              id: `R${1000 + i}`,
+              status: Math.random() > 0.8 ? 'online' : 'offline',
+              health: Math.floor(Math.random() * 30) + 70, // 70-100%
+              battery: Math.floor(Math.random() * 40) + 60, // 60-100%
+              location: ['Winnipeg', 'Toronto', 'Vancouver'][Math.floor(Math.random() * 3)]
+            }))
+          };
+          this.metrics[0].v = response.activeRobots;
+          this.metrics[2].v = response.utilization + '%';
+          this.fleetData = response.fleet;
+        },
+        async fetchAlerts() {
+          // Simulated predictive API (inspired by MetroPT/Kaggle datasets)
+          const alertsData = [
+            { robotId: 'R1001', component: 'Arm Servo', risk: 88, eta: '2 days', confidence: 96 },
+            { robotId: 'R1002', component: 'Battery Cell', risk: 72, eta: '5 days', confidence: 89 },
+            { robotId: 'R1003', component: 'Vision Module', risk: 65, eta: '7 days', confidence: 82 },
+            { robotId: 'R1004', component: 'Wheel Encoder', risk: 58, eta: '9 days', confidence: 77 },
+            { robotId: 'R1005', component: 'Gripper', risk: 92, eta: '1 day', confidence: 98 }
+          ];
+          this.predictiveAlerts.data = alertsData;
+          this.predictiveAlerts.critical = alertsData.filter(a => a.risk > 80).length;
+          this.predictiveAlerts.upcoming = alertsData.length;
+          this.updateAlertChart();
+        },
+        updateAlertChart() {
+          if (!this.alertChart) {
+            const ctx = document.getElementById('alertChart').getContext('2d');
+            this.alertChart = new Chart(ctx, {
+              type: 'doughnut',
+              data: {
+                labels: ['Critical', 'Warning', 'Low'],
+                datasets: [{ data: [this.predictiveAlerts.critical, 4, 3], backgroundColor: ['#dc3545', '#ffc107', '#28a745'] }]
+              },
+              options: { responsive: true }
+            });
+          } else {
+            this.alertChart.data.datasets[0].data = [this.predictiveAlerts.critical, 4, 3];
+            this.alertChart.update();
+          }
+        },
+        scheduleAlert(alert) {
+          alert('Scheduled repair for ' + alert.robotId + ' - ' + alert.component + ' (' + alert.eta + ')');
+        },
+        bookService(center) {
+          alert('Booked at ' + center.name + ' (Load: ' + center.load + '%)');
+        }
+      },
+      mounted() {
+        this.fetchTelemetry();
+        this.fetchAlerts();
+        setInterval(() => {
+          this.fetchTelemetry();
+          this.fetchAlerts();
+        }, 5000); // Refresh every 5s
+        setInterval(() => this.now = new Date().toLocaleTimeString(), 1000);
+      }
+    });
   </script>
 </body>
 </html>
